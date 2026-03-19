@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>3D Snow Rider Clone</title>
+    <style>
+        body { margin: 0; overflow: hidden; background: #87CEEB; }
+        #score { position: absolute; top: 20px; left: 20px; font-size: 30px; font-family: sans-serif; color: white; }
+    </style>
+</head>
+<body>
+    <div id="score">Score: 0</div>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+
+<script>
+    let scene, camera, renderer, sled, score = 0;
+    let trees = [];
+    let speed = 0.5;
+    let moveLeft = false, moveRight = false;
+
+    function init() {
+        // 1. Create the Scene
+        scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x87CEEB); // Sky Blue
+
+        // 2. Create the Camera
+        camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera.position.set(0, 5, 10);
+        camera.lookAt(0, 0, 0);
+
+        // 3. Create the Renderer
+        renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        document.body.appendChild(renderer.domElement);
+
+        // 4. Create the Ground (Snow)
+        const groundGeo = new THREE.PlaneGeometry(20, 1000);
+        const groundMat = new THREE.MeshStandardMaterial({ color: 0xffffff });
+        const ground = new THREE.Mesh(groundGeo, groundMat);
+        ground.rotation.x = -Math.PI / 2;
+        scene.add(ground);
+
+        // 5. Create the Sled (Player)
+        const sledGeo = new THREE.BoxGeometry(1, 0.5, 2);
+        const sledMat = new THREE.MeshStandardMaterial({ color: 0xff0000 });
+        sled = new THREE.Mesh(sledGeo, sledMat);
+        sled.position.y = 0.25;
+        scene.add(sled);
+
+        // 6. Lighting
+        const light = new THREE.DirectionalLight(0xffffff, 1);
+        light.position.set(5, 10, 7.5);
+        scene.add(light);
+        scene.add(new THREE.AmbientLight(0x404040));
+
+        animate();
+    }
+
+    function spawnTree() {
+        const treeGeo = new THREE.ConeGeometry(0.5, 2, 8);
+        const treeMat = new THREE.MeshStandardMaterial({ color: 0x228B22 });
+        const tree = new THREE.Mesh(treeGeo, treeMat);
+        
+        tree.position.z = -50;
+        tree.position.x = (Math.random() - 0.5) * 15;
+        tree.position.y = 1;
+        
+        scene.add(tree);
+        trees.push(tree);
+    }
+
+    function animate() {
+        requestAnimationFrame(animate);
+
+        // Move Sled
+        if (moveLeft && sled.position.x > -8) sled.position.x -= 0.1;
+        if (moveRight && sled.position.x < 8) sled.position.x += 0.1;
+
+        // Move Trees toward player
+        for (let i = trees.length - 1; i >= 0; i--) {
+            trees[i].position.z += speed;
+
+            // Collision Detection
+            if (Math.abs(trees[i].position.z - sled.position.z) < 1 &&
+                Math.abs(trees[i].position.x - sled.position.x) < 0.8) {
+                alert("CRASH! Final Score: " + score);
+                location.reload();
+            }
+
+            // Remove old trees
+            if (trees[i].position.z > 10) {
+                scene.remove(trees[i]);
+                trees.splice(i, 1);
+                score++;
+                document.getElementById('score').innerText = "Score: " + score;
+            }
+        }
+
+        if (Math.random() < 0.05) spawnTree();
+
+        renderer.render(scene, camera);
+    }
+
+    // Controls
+    window.addEventListener('keydown', (e) => {
+        if (e.key === "ArrowLeft") moveLeft = true;
+        if (e.key === "ArrowRight") moveRight = true;
+    });
+    window.addEventListener('keyup', (e) => {
+        if (e.key === "ArrowLeft") moveLeft = false;
+        if (e.key === "ArrowRight") moveRight = false;
+    });
+
+    init();
+</script>
+</body>
+</html>
